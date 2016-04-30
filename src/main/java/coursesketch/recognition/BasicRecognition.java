@@ -1,9 +1,11 @@
 package coursesketch.recognition;
 
 import com.google.common.collect.Lists;
+import com.google.protobuf.InvalidProtocolBufferException;
 import coursesketch.recognition.defaults.DefaultRecognition;
 import coursesketch.recognition.framework.TemplateDatabaseInterface;
 import coursesketch.recognition.framework.exceptions.RecognitionException;
+import coursesketch.recognition.framework.exceptions.TemplateException;
 import coursesketch.recognition.pdollar.PDollarRecognizer;
 import coursesketch.recognition.pdollar.Point;
 import coursesketch.recognition.pdollar.RecognizerResults;
@@ -47,22 +49,39 @@ public class BasicRecognition extends DefaultRecognition {
 
     /**
      * Initializes the recognizer with the templates.
+     * @throws RecognitionInitializationException Thrown if there is a problem initializing the templates
      */
-    public synchronized void initialize() {
+    public synchronized void initialize() throws RecognitionInitializationException {
         LOG.info("Initializing Basic Recognition");
         if (initialized) {
             return;
         }
-        final List<Sketch.RecognitionTemplate> templates = getTemplateDatabase().getTemplate();
+        List<Sketch.RecognitionTemplate> templates = null;
+        try {
+            templates = getTemplateDatabase().getAllTemplates();
+        } catch (TemplateException e) {
+            throw new RecognitionInitializationException("Initialisation failed unable to load all templates", e);
+        }
 
         for (Sketch.RecognitionTemplate template : templates) {
+            final List<Sketch.SrlStroke> strokes = new ArrayList<Sketch.SrlStroke>();
             if (template.hasStroke()) {
                 // LOG.debug("Loading Template {}", template);
-                final List<Sketch.SrlStroke> strokes = new ArrayList<Sketch.SrlStroke>();
                 strokes.add(template.getStroke());
-                final List<Point> points = convert(strokes);
-                recognizer.addGesture(template.getInterpretation().getLabel(), points);
+            } else if (template.hasShape()) {
+                final Sketch.SrlShape shape = template.getShape();
+                for (Sketch.SrlObject object: shape.getSubComponentsList()) {
+                    if (object.getType() == Sketch.SrlObject.ObjectType.STROKE) {
+                        try {
+                            strokes.add(Sketch.SrlStroke.parseFrom(object.getObject()));
+                        } catch (InvalidProtocolBufferException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
             }
+            final List<Point> points = convert(strokes);
+            recognizer.addGesture(template.getInterpretation().getLabel(), points);
         }
         initialized = true;
     }
