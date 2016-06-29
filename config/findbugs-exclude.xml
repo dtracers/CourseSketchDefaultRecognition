@@ -2,4 +2,7 @@
 	<Match>
 		<Package name="~protobuf.*" />
 	</Match>
+	<Match>
+		<Package name="~coursesketch.parsers.*" />
+	</Match>
 </FindBugsFilter>

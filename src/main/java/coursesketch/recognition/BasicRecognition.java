@@ -71,7 +71,7 @@ public class BasicRecognition extends DefaultRecognition {
             } else if (template.hasShape()) {
                 final Sketch.SrlShape shape = template.getShape();
                 for (Sketch.SrlObject object: shape.getSubComponentsList()) {
-                    if (object.getType() == Sketch.SrlObject.ObjectType.STROKE) {
+                    if (object.getType() == Sketch.ObjectType.STROKE) {
                         try {
                             strokes.add(Sketch.SrlStroke.parseFrom(object.getObject()));
                         } catch (InvalidProtocolBufferException e) {

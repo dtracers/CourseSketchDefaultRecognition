@@ -261,7 +261,7 @@
         <dependency>
             <groupId>com.github.dtracers</groupId>
             <artifactId>SketchRecognitionFramework</artifactId>
-            <version>-SNAPSHOT</version>
+            <version>3.0.2</version>
             <scope>compile</scope>
         </dependency>
 
@@ -299,6 +299,12 @@
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
             <version>${puppyVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>2.12.3</version>
         </dependency>
 
     </dependencies>

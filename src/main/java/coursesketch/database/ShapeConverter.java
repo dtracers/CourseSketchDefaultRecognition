@@ -69,7 +69,9 @@ public final class ShapeConverter implements ShapeConverterInterface<com.mongodb
                 LOG.error("There was no point contained in the object.");
             }
         }
-        result.put(OBJECT_TYPE, srlObject.getType().name());
+        if (result != null) {
+            result.put(OBJECT_TYPE, srlObject.getType().name());
+        }
 
         return result;
     }

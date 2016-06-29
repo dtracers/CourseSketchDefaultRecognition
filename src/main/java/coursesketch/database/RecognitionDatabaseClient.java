@@ -7,15 +7,13 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import coursesketch.database.interfaces.AbstractCourseSketchDatabaseReader;
+import com.mongodb.ServerAddress;
 import coursesketch.recognition.framework.TemplateDatabaseInterface;
-import coursesketch.server.interfaces.ServerInfo;
-import database.DatabaseAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import protobuf.srl.sketch.Sketch;
-import utilities.LoggingConstants;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -32,7 +30,7 @@ import static coursesketch.database.RecognitionStringConstants.SKETCH_SKETCH;
 /**
  * Created by David Windows on 4/13/2016.
  */
-public final class RecognitionDatabaseClient extends AbstractCourseSketchDatabaseReader implements TemplateDatabaseInterface {
+public final class RecognitionDatabaseClient implements TemplateDatabaseInterface {
 
     /**
      * Declaration and Definition of Logger.
@@ -45,6 +43,16 @@ public final class RecognitionDatabaseClient extends AbstractCourseSketchDatabas
     private final ShapeConverter shapeConverter = new ShapeConverter();
 
     /**
+     * List of database urls.
+     */
+    private final List<ServerAddress> databaseUrl;
+
+    /**
+     * Database names.
+     */
+    private final String databaseName;
+
+    /**
      * The local database where everything is stored.
      */
     private DB database;
@@ -52,23 +60,33 @@ public final class RecognitionDatabaseClient extends AbstractCourseSketchDatabas
     /**
      * Creates a database interface with the local server information.
      *
-     * @param serverInfo Information about how to create the database.
+     * @param databaseUrl Where the database is located.
+     * @param databaseName The name of the database.
      */
-    public RecognitionDatabaseClient(final ServerInfo serverInfo) {
-        super(serverInfo);
+    public RecognitionDatabaseClient(final List<ServerAddress> databaseUrl, final String databaseName) {
+        this.databaseUrl = databaseUrl;
+        this.databaseName = databaseName;
     }
 
-    @Override protected void setUpIndexes() {
+    /**
+     * Sets up indexes.
+     */
+    protected void setUpIndexes() {
         database.getCollection(TEMPLATE_COLLECTION).createIndex(new BasicDBObject(TEMPLATE_INTERPRETATION + '.' + INTERPRETATION_LABEL, 1)
                 .append("unique", false));
         database.getCollection(TEMPLATE_COLLECTION).createIndex(new BasicDBObject(TEMPLATE_ID, 1)
                 .append("unique", true));
     }
 
-    @Override protected void onStartDatabase() throws DatabaseAccessException {
-        final MongoClient mongoClient = new MongoClient(super.getServerInfo().getDatabaseUrl());
-        database = mongoClient.getDB(super.getServerInfo().getDatabaseName());
-        super.setDatabaseStarted();
+    /**
+     * Loads database.
+     *
+     * @throws UnknownHostException exception
+     */
+    public void onStartDatabase() throws UnknownHostException {
+        final MongoClient mongoClient = new MongoClient(databaseUrl);
+        database = mongoClient.getDB(databaseName);
+        setUpIndexes();
     }
 
     @Override
@@ -89,7 +107,7 @@ public final class RecognitionDatabaseClient extends AbstractCourseSketchDatabas
         sketchDbObject.append(SKETCH_SKETCH, sketchSketch);
         final BasicDBObject templateObject = createDefaultTemplate(templateId, srlInterpretation, sketchDbObject);
 
-        LOG.debug("ADDING TEMPLATE: {}", LoggingConstants.prettyPrintJson(templateObject.toString()));
+        // LOG.debug("ADDING TEMPLATE: {}", LoggingConstants.prettyPrintJson(templateObject.toString()));
 
         templates.insert(templateObject);
     }
@@ -103,7 +121,7 @@ public final class RecognitionDatabaseClient extends AbstractCourseSketchDatabas
         final BasicDBObject templateObject = createDefaultTemplate(templateId, srlInterpretation, shapeDbObject);
         templateObject.put(OBJECT_TYPE, Sketch.ObjectType.SHAPE.name());
 
-        LOG.debug("ADDING TEMPLATE: \n\n{}", LoggingConstants.prettyPrintJson(templateObject.toString()));
+        // LOG.debug("ADDING TEMPLATE: \n\n{}", LoggingConstants.prettyPrintJson(templateObject.toString()));
 
         templates.insert(templateObject);
     }
@@ -117,7 +135,7 @@ public final class RecognitionDatabaseClient extends AbstractCourseSketchDatabas
         final BasicDBObject templateObject = createDefaultTemplate(templateId, srlInterpretation, strokeDbObject);
         templateObject.put(OBJECT_TYPE, Sketch.ObjectType.STROKE.name());
 
-        LOG.debug("ADDING TEMPLATE: \n\n{}", LoggingConstants.prettyPrintJson(templateObject.toString()));
+        // LOG.debug("ADDING TEMPLATE: \n\n{}", LoggingConstants.prettyPrintJson(templateObject.toString()));
 
         templates.insert(templateObject);
     }
