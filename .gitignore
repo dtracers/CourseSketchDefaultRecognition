@@ -37,3 +37,6 @@ target/
 #end ide files
 
 *.ini
+
+xml_logs/
+mmg/*
