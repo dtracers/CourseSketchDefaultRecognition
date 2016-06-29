@@ -40,3 +40,4 @@ target/
 
 xml_logs/
 mmg/*
+*.patch

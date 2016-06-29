@@ -24,9 +24,9 @@ import java.util.UUID;
 /**
  * Created by gigemjt on 4/16/16.
  *
- * http://depts.washington.edu/aimgroup/proj/dollar/xml.zip
+ * http://depts.washington.edu/aimgroup/proj/dollar/mmg.zip
  */
-public class Xml1DollarParserToDb {
+public class XmlPDollarParserToMongo {
     public static void main(String args[]) throws Exception {
         //Get the DOM Builder Factory		
         System.out.println("Working Directory = " +
@@ -38,9 +38,12 @@ public class Xml1DollarParserToDb {
         RecognitionDatabaseClient client = new RecognitionDatabaseClient(databaseUrl, "RecognitionServer");
         client.onStartDatabase();
 
-        File f = new File("./xml_logs");
+        File f = new File("./mmg");
         navigateFiles(f, client);
         System.out.println(f.getAbsolutePath());
+        // ClassLoader.getSystemResourceAsStream("mmg_example.xml");		
+
+        // parseFile(new FileInputStream(new File("mmg_example.xml")), "mmg_example.xml");		
 
     }
 
@@ -54,17 +57,16 @@ public class Xml1DollarParserToDb {
                     System.out.println(fileEntry.getName());
                     continue;
                 }
+                String name = folder.getName() + fileEntry.getName();
                 final InputStream inputStream = new FileInputStream(fileEntry);
-                String name = folder.getName() + "-" + fileEntry.getName();
-                final Sketch.RecognitionTemplate recognitionTemplate = parseFile(inputStream, name);
-                client.addTemplate(UUID.randomUUID().toString(), recognitionTemplate.getInterpretation(), recognitionTemplate.getStroke());
+                final Sketch.RecognitionTemplate recognitionTemplate = parseFile(inputStream, fileEntry.getName());
+                client.addTemplate(UUID.randomUUID().toString(), recognitionTemplate.getInterpretation(), recognitionTemplate.getShape());
             }
         }
     }
 
     public static Sketch.RecognitionTemplate parseFile(InputStream stream, String fileName) throws ParserConfigurationException, IOException, SAXException {
         Sketch.RecognitionTemplate.Builder template = Sketch.RecognitionTemplate.newBuilder();
-        Sketch.SrlStroke.Builder stroke = Sketch.SrlStroke.newBuilder();
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         //Get the DOM Builder		
@@ -76,8 +78,44 @@ public class Xml1DollarParserToDb {
         final Element documentElement = document.getDocumentElement();
         String gestureName = documentElement.getAttribute("Name");
 
-        final NodeList gestureChildNodes = documentElement.getElementsByTagName("Point");
+        Sketch.SrlShape.Builder shape = Sketch.SrlShape.newBuilder();
+        shape.setTime(0);
+        shape.setId(UUID.randomUUID().toString());
+
+        final NodeList gestureChildNodes = documentElement.getElementsByTagName("Stroke");
         for (int i = 0; i < gestureChildNodes.getLength(); i++) {
+            final Node stroke = gestureChildNodes.item(i);
+            final Sketch.SrlObject srlObject = parseStroke(stroke);
+            shape.addSubComponents(srlObject);
+        }
+        String realLabel = gestureName.substring(0, gestureName.length() - 3);
+        System.out.println("TemplateId: " + fileName);
+        System.out.println("REAL LABEL: " + realLabel);
+
+        // template.setStroke(stroke);		
+        template.setInterpretation(Sketch.SrlInterpretation.newBuilder().setConfidence(1).setLabel(realLabel));
+        template.setShape(shape);
+        template.setTemplateId(fileName);
+        return template.build();
+    }
+
+    public static Sketch.SrlObject parseStroke(Node strokeNode) {
+        final Element element = (Element) strokeNode;
+        final Sketch.SrlStroke.Builder srlStroke = parseStroke(element.getElementsByTagName("Point"));
+
+        final NamedNodeMap attributes = element.getAttributes();
+        srlStroke.setId(attributes.getNamedItem("index").getNodeValue());
+
+        Sketch.SrlObject.Builder object = Sketch.SrlObject.newBuilder();
+        object.setType(Sketch.ObjectType.STROKE);
+        object.setObject(srlStroke.build().toByteString());
+        return object.build();
+    }
+
+    public static Sketch.SrlStroke.Builder parseStroke(NodeList gestureChildNodes) {
+        Sketch.SrlStroke.Builder stroke = Sketch.SrlStroke.newBuilder();
+
+        for (int i = 1; i < gestureChildNodes.getLength(); i++) {
             final Node point = gestureChildNodes.item(i);
             final NamedNodeMap attributes = point.getAttributes();
             final Node nodeX = attributes.getNamedItem("X");
@@ -86,23 +124,17 @@ public class Xml1DollarParserToDb {
             long x = Long.parseLong(nodeX.getNodeValue());
             long y = Long.parseLong(nodeY.getNodeValue());
             long time = Long.parseLong(nodeTime.getNodeValue());
+            double pressure = Double.parseDouble(attributes.getNamedItem("Pressure").getNodeValue());
 
             Sketch.SrlPoint.Builder protoPoint = Sketch.SrlPoint.newBuilder();
             protoPoint.setId(UUID.randomUUID().toString());
             protoPoint.setX(x);
             protoPoint.setY(y);
             protoPoint.setTime(time);
+            protoPoint.setPressure(pressure);
             stroke.addPoints(protoPoint);
         }
-        stroke.setId(UUID.randomUUID().toString());
         stroke.setTime(0);
-        String realLabel = gestureName.substring(0, gestureName.length() - 2);
-        System.out.println("TemplateId: " + fileName);
-        System.out.println("REAL LABEL: " + realLabel);
-
-        template.setStroke(stroke);
-        template.setInterpretation(Sketch.SrlInterpretation.newBuilder().setConfidence(1).setLabel(realLabel));
-        template.setTemplateId(fileName);
-        return template.build();
+        return stroke;
     }
 }
