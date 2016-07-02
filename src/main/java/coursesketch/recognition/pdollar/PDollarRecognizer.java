@@ -77,7 +77,7 @@ public class PDollarRecognizer {
     private static final Logger LOG = LoggerFactory.getLogger(PDollarRecognizer.class);
 
 
-    static int mNumPoints = 32;
+    public static final int mNumPoints = 32;
     static Point mPointOrig = new Point(0.0, 0.0, 0);
     static List<PointCloud> mPntClouds = new ArrayList<PointCloud>();
 
