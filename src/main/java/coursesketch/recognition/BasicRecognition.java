@@ -88,6 +88,11 @@ public class BasicRecognition extends DefaultRecognition {
     public void trainTemplate(final Sketch.RecognitionTemplate template) throws TemplateException {
         final List<Sketch.SrlStroke> strokes = convert(template);
         final List<Point> points = convert(strokes);
+        if (points.size() == 0) {
+            LOG.warn("Template was empty id:{} interpretation: {}",
+                    template.getTemplateId(), template.getInterpretation().getLabel());
+            return;
+        }
         recognizer.addGesture(template.getInterpretation().getLabel(), points);
     }
 

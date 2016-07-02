@@ -28,14 +28,14 @@ import java.util.UUID;
  */
 public class Xml1DollarParserToMongo {
     public static void main(String args[]) throws Exception {
-        //Get the DOM Builder Factory		
+        //Get the DOM Builder Factory
         System.out.println("Working Directory = " +
                 System.getProperty("user.dir"));
 
         final List<ServerAddress> databaseUrl = new ArrayList<>();
         databaseUrl.add(new ServerAddress());
 
-        RecognitionDatabaseClient client = new RecognitionDatabaseClient(databaseUrl, "RecognitionServer");
+        RecognitionDatabaseClient client = new RecognitionDatabaseClient(databaseUrl, "Recognition");
         client.onStartDatabase();
 
         File f = new File("./xml_logs");
@@ -67,7 +67,7 @@ public class Xml1DollarParserToMongo {
         Sketch.SrlStroke.Builder stroke = Sketch.SrlStroke.newBuilder();
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        //Get the DOM Builder		
+        //Get the DOM Builder
         DocumentBuilder builder = factory.newDocumentBuilder();
 
         Document document =

@@ -28,22 +28,22 @@ import java.util.UUID;
  */
 public class XmlPDollarParserToMongo {
     public static void main(String args[]) throws Exception {
-        //Get the DOM Builder Factory		
+        //Get the DOM Builder Factory
         System.out.println("Working Directory = " +
                 System.getProperty("user.dir"));
 
         final List<ServerAddress> databaseUrl = new ArrayList<>();
         databaseUrl.add(new ServerAddress());
 
-        RecognitionDatabaseClient client = new RecognitionDatabaseClient(databaseUrl, "RecognitionServer");
+        RecognitionDatabaseClient client = new RecognitionDatabaseClient(databaseUrl, "Recognition");
         client.onStartDatabase();
 
         File f = new File("./mmg");
         navigateFiles(f, client);
         System.out.println(f.getAbsolutePath());
-        // ClassLoader.getSystemResourceAsStream("mmg_example.xml");		
+        // ClassLoader.getSystemResourceAsStream("mmg_example.xml");
 
-        // parseFile(new FileInputStream(new File("mmg_example.xml")), "mmg_example.xml");		
+        // parseFile(new FileInputStream(new File("mmg_example.xml")), "mmg_example.xml");
 
     }
 
@@ -69,7 +69,7 @@ public class XmlPDollarParserToMongo {
         Sketch.RecognitionTemplate.Builder template = Sketch.RecognitionTemplate.newBuilder();
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        //Get the DOM Builder		
+        //Get the DOM Builder
         DocumentBuilder builder = factory.newDocumentBuilder();
 
         Document document =
@@ -92,7 +92,7 @@ public class XmlPDollarParserToMongo {
         System.out.println("TemplateId: " + fileName);
         System.out.println("REAL LABEL: " + realLabel);
 
-        // template.setStroke(stroke);		
+        // template.setStroke(stroke);
         template.setInterpretation(Sketch.SrlInterpretation.newBuilder().setConfidence(1).setLabel(realLabel));
         template.setShape(shape);
         template.setTemplateId(fileName);
