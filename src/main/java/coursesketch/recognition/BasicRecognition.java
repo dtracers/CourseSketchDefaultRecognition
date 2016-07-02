@@ -39,6 +39,11 @@ public class BasicRecognition extends DefaultRecognition {
     private boolean initialized = false;
 
     /**
+     * True once recognition have been setup and initialized.
+     */
+    private boolean trainingComplete = false;
+
+    /**
      * Creates a basic recognition instance.
      *
      * @param templateDatabase The database.
@@ -49,39 +54,11 @@ public class BasicRecognition extends DefaultRecognition {
 
     /**
      * Initializes the recognizer with the templates.
-     * @throws RecognitionInitializationException Thrown if there is a problem initializing the templates
      */
-    public synchronized void initialize() throws RecognitionInitializationException {
+    public synchronized void initialize() {
         LOG.info("Initializing Basic Recognition");
         if (initialized) {
             return;
-        }
-        List<Sketch.RecognitionTemplate> templates = null;
-        try {
-            templates = getTemplateDatabase().getAllTemplates();
-        } catch (TemplateException e) {
-            throw new RecognitionInitializationException("Initialisation failed unable to load all templates", e);
-        }
-
-        for (Sketch.RecognitionTemplate template : templates) {
-            final List<Sketch.SrlStroke> strokes = new ArrayList<Sketch.SrlStroke>();
-            if (template.hasStroke()) {
-                // LOG.debug("Loading Template {}", template);
-                strokes.add(template.getStroke());
-            } else if (template.hasShape()) {
-                final Sketch.SrlShape shape = template.getShape();
-                for (Sketch.SrlObject object: shape.getSubComponentsList()) {
-                    if (object.getType() == Sketch.ObjectType.STROKE) {
-                        try {
-                            strokes.add(Sketch.SrlStroke.parseFrom(object.getObject()));
-                        } catch (InvalidProtocolBufferException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-            final List<Point> points = convert(strokes);
-            recognizer.addGesture(template.getInterpretation().getLabel(), points);
         }
         initialized = true;
     }
@@ -105,6 +82,13 @@ public class BasicRecognition extends DefaultRecognition {
             initialize();
         }
         return null;
+    }
+
+    @Override
+    public void trainTemplate(final Sketch.RecognitionTemplate template) throws TemplateException {
+        final List<Sketch.SrlStroke> strokes = convert(template);
+        final List<Point> points = convert(strokes);
+        recognizer.addGesture(template.getInterpretation().getLabel(), points);
     }
 
     @Override public Commands.SrlUpdateList recognize(final String s, final Commands.SrlUpdateList srlUpdateList) throws RecognitionException {
@@ -185,6 +169,27 @@ public class BasicRecognition extends DefaultRecognition {
         return null;
     }
 
+    @Override
+    public List<Sketch.SrlInterpretation> recognize(final String s,
+            final Sketch.RecognitionTemplate recognitionTemplate) throws RecognitionException {
+        final List<Sketch.SrlStroke> strokes = convert(recognitionTemplate);
+        final List<Point> points = convert(strokes);
+        final RecognizerResults recognizerResults = recognizer.Recognize(points);
+        return Lists.newArrayList(createInterpretationFromResult(recognizerResults));
+    }
+
+    /**
+     * @param recognizerResults Contains recognition data.
+     * @return Creates an SrlInpreatation from the results
+     */
+    private Sketch.SrlInterpretation createInterpretationFromResult(final RecognizerResults recognizerResults) {
+        final Sketch.SrlInterpretation.Builder interpretation = Sketch.SrlInterpretation.newBuilder();
+        interpretation.setLabel(recognizerResults.mName);
+        interpretation.setConfidence(recognizerResults.mScore);
+        interpretation.setComplexity(1);
+        return interpretation.build();
+    }
+
     @Override public List<Sketch.RecognitionTemplate> generateTemplates(final Sketch.RecognitionTemplate recognitionTemplate) {
         return Lists.newArrayList(recognitionTemplate);
     }
@@ -221,6 +226,32 @@ public class BasicRecognition extends DefaultRecognition {
     }
 
     /**
+     * Converts a template into a list of strokes.
+     *
+     * @param template The sketch template
+     * @return A list of strokes
+     */
+    private List<Sketch.SrlStroke> convert(final Sketch.RecognitionTemplate template) {
+        final List<Sketch.SrlStroke> strokes = new ArrayList<Sketch.SrlStroke>();
+        if (template.hasStroke()) {
+            // LOG.debug("Loading Template {}", template);
+            strokes.add(template.getStroke());
+        } else if (template.hasShape()) {
+            final Sketch.SrlShape shape = template.getShape();
+            for (Sketch.SrlObject object: shape.getSubComponentsList()) {
+                if (object.getType() == Sketch.ObjectType.STROKE) {
+                    try {
+                        strokes.add(Sketch.SrlStroke.parseFrom(object.getObject()));
+                    } catch (InvalidProtocolBufferException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return strokes;
+    }
+
+    /**
      * Converts the list of strokes to a point cloud.
      *
      * @param strokes A list of strokes to be converted.
@@ -251,5 +282,31 @@ public class BasicRecognition extends DefaultRecognition {
             points.add(point);
         }
         return points;
+    }
+
+    /**
+     * Loads all of the training data into the recognizer.
+     *
+     * @throws RecognitionInitializationException Thrown if the templates can not be grabbed.
+     */
+    public synchronized void addAllTrainingData() throws RecognitionInitializationException {
+        if (trainingComplete) {
+            return;
+        }
+        List<Sketch.RecognitionTemplate> templates = null;
+        try {
+            templates = getTemplateDatabase().getAllTemplates();
+        } catch (TemplateException e) {
+            throw new RecognitionInitializationException("Initialisation failed unable to load all templates", e);
+        }
+
+        for (Sketch.RecognitionTemplate template : templates) {
+            try {
+                trainTemplate(template);
+            } catch (TemplateException e) {
+                LOG.error("Unable to train template", e);
+            }
+        }
+        trainingComplete = true;
     }
 }
