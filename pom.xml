@@ -54,7 +54,7 @@
         <pmdVersion>3.3</pmdVersion>
         <failSafeVersion>2.18.1</failSafeVersion>
         <surefireVersion>2.17</surefireVersion>
-        <SketchRecognitionFrameworkVersion>3.0.3</SketchRecognitionFrameworkVersion>
+        <SketchRecognitionFrameworkVersion>3.0.7</SketchRecognitionFrameworkVersion>
 
         <!-- testing -->
         <testLevel>0</testLevel>

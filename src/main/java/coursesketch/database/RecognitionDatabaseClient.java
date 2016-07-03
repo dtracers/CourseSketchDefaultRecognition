@@ -20,12 +20,13 @@ import java.util.UUID;
 
 import static coursesketch.database.RecognitionStringConstants.INTERPRETATION_LABEL;
 import static coursesketch.database.RecognitionStringConstants.OBJECT_TYPE;
-import static coursesketch.database.RecognitionStringConstants.TEMPLATE_COLLECTION;
-import static coursesketch.database.RecognitionStringConstants.TEMPLATE_ID;
-import static coursesketch.database.RecognitionStringConstants.TEMPLATE_INTERPRETATION;
-import static coursesketch.database.RecognitionStringConstants.TEMPLATE_DATA;
 import static coursesketch.database.RecognitionStringConstants.SKETCH_DOMAINID;
 import static coursesketch.database.RecognitionStringConstants.SKETCH_SKETCH;
+import static coursesketch.database.RecognitionStringConstants.TEMPLATE_COLLECTION;
+import static coursesketch.database.RecognitionStringConstants.TEMPLATE_DATA;
+import static coursesketch.database.RecognitionStringConstants.TEMPLATE_ID;
+import static coursesketch.database.RecognitionStringConstants.TEMPLATE_INTERPRETATION;
+
 
 /**
  * Created by David Windows on 4/13/2016.
@@ -166,9 +167,10 @@ public final class RecognitionDatabaseClient implements TemplateDatabaseInterfac
         final List<Sketch.RecognitionTemplate> templateList = new ArrayList<Sketch.RecognitionTemplate>();
 
         final DBCollection templates = database.getCollection(TEMPLATE_COLLECTION);
-        final DBObject interpretationDbObject = shapeConverter.makeDbInterpretation(srlInterpretation);
 
-        final DBCursor templateObjectCursor = templates.find(interpretationDbObject);
+        final DBCursor templateObjectCursor = templates.find(
+                new BasicDBObject(TEMPLATE_INTERPRETATION + "." + INTERPRETATION_LABEL, srlInterpretation.getLabel()));
+        LOG.debug("Number of templates found " + templateObjectCursor.count());
 
         while (templateObjectCursor.hasNext()) {
             final DBObject templateObject = templateObjectCursor.next();
@@ -194,7 +196,13 @@ public final class RecognitionDatabaseClient implements TemplateDatabaseInterfac
     }
 
     @Override public List<Sketch.SrlInterpretation> getAllInterpretations() {
-        return null;
+        final DBCollection templates = database.getCollection(TEMPLATE_COLLECTION);
+        final List distinct = templates.distinct("TemplateInterpretation.InterpretationLabel");
+        final List<Sketch.SrlInterpretation> interpretations = new ArrayList<>();
+        for (Object o : distinct) {
+            interpretations.add(Sketch.SrlInterpretation.newBuilder().setLabel("" + o).setConfidence(1).build());
+        }
+        return interpretations;
     }
 
 }
