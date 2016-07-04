@@ -32,10 +32,12 @@ public class RecognitionTest {
         RecognitionTesting tester = new RecognitionTesting(client, rec2);
         final List<Sketch.SrlInterpretation> allInterpretations = client.getAllInterpretations();
         System.out.println("TESTING TEMPLATE " + allInterpretations.get(0));
-        List<RecognitionScoreMetrics> recognitionScoreMetrics = tester.testAgainstInterpretation(allInterpretations.get(0));
+        List<RecognitionScoreMetrics> recognitionScoreMetrics = tester.testAgainstAllTemplates();
         System.out.println("done recognizer");
         for (RecognitionScoreMetrics scoreMetrics : recognitionScoreMetrics) {
-            System.out.println(scoreMetrics.computeMetrics(scoreMetrics.getScores()));
+            scoreMetrics.computeRecognitionMetrics();
+            System.out.println(scoreMetrics.getRecognitionMetric());
+            System.out.println(scoreMetrics.getTrainingMetric());
         }
     }
 }

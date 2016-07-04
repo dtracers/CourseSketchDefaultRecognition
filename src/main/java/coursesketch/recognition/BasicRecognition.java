@@ -96,6 +96,11 @@ public class BasicRecognition extends DefaultRecognition {
         recognizer.addGesture(template.getInterpretation().getLabel(), points);
     }
 
+    @Override
+    public void finishTraining() throws RecognitionException {
+        // Does nothing
+    }
+
     @Override public Commands.SrlUpdateList recognize(final String s, final Commands.SrlUpdateList srlUpdateList) throws RecognitionException {
         if (!initialized) {
             initialize();
